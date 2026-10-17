@@ -1,3 +1,4 @@
+
 require('dotenv').config()
 
 const dns = require('dns')
@@ -15,18 +16,20 @@ const authRoutes = require('./routes/authRoutes')
 const taskRoutes = require('./routes/taskRoutes')
 const { protect } = require('./middleware/authMiddleware')
 
+// Allowed frontend origins
 const allowedOrigins = [
   'http://localhost:5173',
-  process.env.CLIENT_URL
+  process.env.FRONTEND_URL
 ].filter(Boolean)
 
+// CORS configuration
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin || allowedOrigins.includes(origin)) {
       return callback(null, true)
     }
 
-    return callback(new Error('Not allowed by CORS'))
+    return callback(new Error(`Not allowed by CORS: ${origin}`))
   },
   credentials: true
 }))
@@ -34,6 +37,7 @@ app.use(cors({
 app.use(express.json())
 app.use(cookieParser())
 
+// API health check
 app.get('/', (req, res) => {
   res.status(200).json({
     success: true,
@@ -41,9 +45,13 @@ app.get('/', (req, res) => {
   })
 })
 
+// Authentication routes
 app.use('/api/auth', authRoutes)
+
+// Task routes
 app.use('/api/tasks', taskRoutes)
 
+// Get currently authenticated user
 app.get('/api/auth/me', protect, (req, res) => {
   res.status(200).json({
     success: true,
@@ -51,9 +59,11 @@ app.get('/api/auth/me', protect, (req, res) => {
   })
 })
 
+// Connect to MongoDB and start server
 async function startServer() {
   try {
     await mongoose.connect(process.env.MONGO_URI)
+
     console.log('MongoDB connected successfully')
 
     app.listen(PORT, () => {
